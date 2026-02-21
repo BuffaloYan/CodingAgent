@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-by-claude"
+version = "0.1.0"
+description = "A local-first AI coding assistant with Gradio UI and LangGraph agent"
+requires-python = ">=3.11"
+dependencies = [
+    "gradio>=5.0",
+    "langchain>=0.3",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    "langchain-anthropic>=0.3",
+    "langchain-google-genai>=2.0",
+    "langchain-ollama>=0.2",
+    "langgraph>=0.2",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "playwright>=1.40",
+    "markdown>=3.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+agent-by-claude = "ui.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["agent", "core", "ui"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
