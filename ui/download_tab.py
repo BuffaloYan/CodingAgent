@@ -5,7 +5,6 @@ Download individual files or the entire project as a ZIP.
 
 from __future__ import annotations
 
-import io
 import zipfile
 from pathlib import Path
 
@@ -44,7 +43,8 @@ def build_download_tab() -> None:
                 for f in project.rglob("*"):
                     if f.is_file() and not any(p.startswith(".") for p in f.parts):
                         zf.write(f, f.relative_to(project))
-            return str(zip_path), f"✅ Created `{project.name}.zip` ({zip_path.stat().st_size // 1024} KB)"
+            size_kb = zip_path.stat().st_size // 1024
+            return str(zip_path), f"✅ Created `{project.name}.zip` ({size_kb} KB)"
         except Exception as e:
             return None, f"❌ {e}"
 

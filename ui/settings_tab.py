@@ -22,9 +22,11 @@ def build_settings_tab(model_state: gr.State) -> None:
             keys.get("OPENAI_API_KEY", ""),
             keys.get("ANTHROPIC_API_KEY", ""),
             keys.get("GOOGLE_API_KEY", ""),
+            keys.get("GRADIO_AUTH_USER", ""),
+            keys.get("GRADIO_AUTH_PASSWORD", ""),
         )
 
-    current_model, model_list, oai_key, ant_key, goog_key = load_settings()
+    current_model, model_list, oai_key, ant_key, goog_key, g_user, g_pass = load_settings()
 
     with gr.Column():
         gr.Markdown("## ⚙️ Settings")
@@ -85,6 +87,19 @@ def build_settings_tab(model_state: gr.State) -> None:
                 type="password",
                 placeholder="AIza…",
             )
+            gr.Markdown("#### Gradio App Authentication (Local & Public)")
+            with gr.Row():
+                gradio_auth_user = gr.Textbox(
+                    label="Gradio Username",
+                    value=g_user,
+                    placeholder="admin",
+                )
+                gradio_auth_password = gr.Textbox(
+                    label="Gradio Password",
+                    value=g_pass,
+                    type="password",
+                    placeholder="choose-a-safe-password",
+                )
 
         save_keys_btn = gr.Button("💾 Save Keys", variant="primary")
         keys_status = gr.Markdown("")
@@ -111,13 +126,15 @@ def build_settings_tab(model_state: gr.State) -> None:
             save_config(cfg)
         return gr.update(choices=models, value=new_id), f"✅ Added `{new_id}` to model list."
 
-    def do_save_keys(oai: str, ant: str, goog: str):
+    def do_save_keys(oai: str, ant: str, goog: str, g_user: str, g_pass: str):
         save_env({
             "OPENAI_API_KEY": oai,
             "ANTHROPIC_API_KEY": ant,
             "GOOGLE_API_KEY": goog,
+            "GRADIO_AUTH_USER": g_user,
+            "GRADIO_AUTH_PASSWORD": g_pass,
         })
-        return "✅ API keys saved to `.env`"
+        return "✅ Settings saved to `.env` (Restart app to apply auth changes)"
 
     save_model_btn.click(
         do_save_model,
@@ -131,6 +148,6 @@ def build_settings_tab(model_state: gr.State) -> None:
     )
     save_keys_btn.click(
         do_save_keys,
-        inputs=[openai_key, anthropic_key, google_key],
+        inputs=[openai_key, anthropic_key, google_key, gradio_auth_user, gradio_auth_password],
         outputs=[keys_status],
     )

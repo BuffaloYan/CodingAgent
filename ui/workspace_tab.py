@@ -20,26 +20,6 @@ import markdown as md_lib
 from core.projects import get_active_project, project_tree
 
 
-# ── Local static file server ──────────────────────────────────────────
-
-_server_thread: threading.Thread | None = None
-_server_port: int = 18862
-
-
-def _start_file_server(directory: Path, port: int = 18862) -> int:
-    """Start a local HTTP server serving *directory*. Returns port."""
-    global _server_thread, _server_port
-    _server_port = port
-    if _server_thread and _server_thread.is_alive():
-        return port
-    handler = partial(SimpleHTTPRequestHandler, directory=str(directory))
-    httpd = HTTPServer(("127.0.0.1", port), handler)
-    httpd.timeout = 0.5
-    _server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    _server_thread.start()
-    return port
-
-
 # ── Preview format detection ──────────────────────────────────────────
 
 _HTML_EXTS = {".html", ".htm"}
@@ -50,7 +30,9 @@ _PDF_EXTS = {".pdf"}
 _VIDEO_EXTS = {".mp4", ".webm", ".mov"}
 _AUDIO_EXTS = {".mp3", ".wav", ".ogg", ".flac", ".m4a"}
 
-_ALL_PREVIEWABLE = _HTML_EXTS | _IMAGE_EXTS | _MARKDOWN_EXTS | _CSV_EXTS | _PDF_EXTS | _VIDEO_EXTS | _AUDIO_EXTS
+_ALL_PREVIEWABLE = (
+    _HTML_EXTS | _IMAGE_EXTS | _MARKDOWN_EXTS | _CSV_EXTS | _PDF_EXTS | _VIDEO_EXTS | _AUDIO_EXTS
+)
 
 
 def _is_previewable(path: str) -> bool:
@@ -84,19 +66,18 @@ _PREVIEW_STYLE = (
 )
 
 
-def _build_preview(relative_path: str, content: str, server_url: str) -> str:
+def _build_preview(relative_path: str, content: str) -> str:
     """Return an HTML string with the right preview for the file type."""
     ext = Path(relative_path).suffix.lower()
     cb = int(time.time() * 1000)  # cache-buster
+    url = f"/workspace_preview/{relative_path}?_={cb}"
 
     # ── HTML: iframe via HTTP server (full JS execution)
     if ext in _HTML_EXTS:
-        url = f"{server_url}/{relative_path}?_={cb}"
         return f'<iframe src="{url}" style="{_PREVIEW_STYLE}height:550px;"></iframe>'
 
     # ── Images: <img> tag via HTTP server
     if ext in _IMAGE_EXTS:
-        url = f"{server_url}/{relative_path}?_={cb}"
         return (
             f'<div style="padding:20px;text-align:center;background:#1e1e2e;'
             f'border-radius:8px;min-height:200px;">'
@@ -117,15 +98,21 @@ def _build_preview(relative_path: str, content: str, server_url: str) -> str:
             f'color:#cdd6f4;font-family:system-ui,sans-serif;line-height:1.7;'
             f'max-height:600px;overflow-y:auto;">'
             f'<style>'
-            f'  .md-preview h1,.md-preview h2,.md-preview h3 {{ color:#89b4fa; margin-top:1em; }}'
-            f'  .md-preview code {{ background:#313244; padding:2px 6px; border-radius:4px; font-size:0.9em; }}'
-            f'  .md-preview pre {{ background:#313244; padding:12px; border-radius:8px; overflow-x:auto; }}'
+            f'  .md-preview h1,.md-preview h2,.md-preview h3 {{ '
+            f'color:#89b4fa; margin-top:1em; }}'
+            f'  .md-preview code {{ background:#313244; padding:2px 6px; '
+            f'border-radius:4px; font-size:0.9em; }}'
+            f'  .md-preview pre {{ background:#313244; padding:12px; '
+            f'border-radius:8px; overflow-x:auto; }}'
             f'  .md-preview pre code {{ background:none; padding:0; }}'
-            f'  .md-preview table {{ border-collapse:collapse; width:100%; margin:1em 0; }}'
-            f'  .md-preview th,.md-preview td {{ border:1px solid #45475a; padding:8px 12px; text-align:left; }}'
+            f'  .md-preview table {{ border-collapse:collapse; width:100%; '
+            f'margin:1em 0; }}'
+            f'  .md-preview th,.md-preview td {{ border:1px solid #45475a; '
+            f'padding:8px 12px; text-align:left; }}'
             f'  .md-preview th {{ background:#313244; }}'
             f'  .md-preview a {{ color:#89b4fa; }}'
-            f'  .md-preview blockquote {{ border-left:3px solid #89b4fa; padding-left:12px; color:#a6adc8; }}'
+            f'  .md-preview blockquote {{ border-left:3px solid #89b4fa; '
+            f'padding-left:12px; color:#a6adc8; }}'
             f'</style>'
             f'<div class="md-preview">{html}</div>'
             f'</div>'
@@ -161,7 +148,8 @@ def _build_preview(relative_path: str, content: str, server_url: str) -> str:
             f'<tr>{th}</tr></thead>'
             f'<tbody>{tbody}</tbody></table>'
             f'<style>'
-            f'  table th, table td {{ border:1px solid #45475a; padding:6px 10px; text-align:left; }}'
+            f'  table th, table td {{ border:1px solid #45475a; '
+            f'padding:6px 10px; text-align:left; }}'
             f'  table tr:hover {{ background:rgba(137,180,250,0.08); }}'
             f'</style>'
             f'</div>'
@@ -171,28 +159,28 @@ def _build_preview(relative_path: str, content: str, server_url: str) -> str:
 
     # ── PDF: iframe embed
     if ext in _PDF_EXTS:
-        url = f"{server_url}/{relative_path}?_={cb}"
         return f'<iframe src="{url}" style="{_PREVIEW_STYLE}height:600px;"></iframe>'
 
     # ── Video: HTML5 video player
     if ext in _VIDEO_EXTS:
-        url = f"{server_url}/{relative_path}?_={cb}"
         return (
             f'<div style="padding:20px;text-align:center;background:#1e1e2e;border-radius:8px;">'
             f'<video controls style="max-width:100%;max-height:500px;border-radius:6px;">'
-            f'<source src="{url}" type="video/{ext.lstrip(".")}">Your browser does not support video.</video>'
+            f'<source src="{url}" type="video/{ext.lstrip(".")}">'
+            f'Your browser does not support video.</video>'
             f'<p style="color:#a6adc8;margin-top:12px;font-size:0.85rem;">{relative_path}</p>'
             f'</div>'
         )
 
     # ── Audio: HTML5 audio player
     if ext in _AUDIO_EXTS:
-        url = f"{server_url}/{relative_path}?_={cb}"
         return (
             f'<div style="padding:30px;text-align:center;background:#1e1e2e;border-radius:8px;">'
-            f'<p style="color:#cdd6f4;font-size:1.1rem;margin-bottom:16px;">🎵 {relative_path}</p>'
+            f'<p style="color:#cdd6f4;font-size:1.1rem;margin-bottom:16px;">'
+            f'🎵 {relative_path}</p>'
             f'<audio controls style="width:100%;max-width:500px;">'
-            f'<source src="{url}" type="audio/{ext.lstrip(".")}">Your browser does not support audio.</audio>'
+            f'<source src="{url}" type="audio/{ext.lstrip(".")}">'
+            f'Your browser does not support audio.</audio>'
             f'</div>'
         )
 
@@ -259,7 +247,7 @@ def build_workspace_tab() -> None:
         empty_result = (
             "", gr.update(visible=False), gr.update(visible=False),
             gr.update(visible=False), "", "_Select a file to edit_",
-            gr.update(visible=False), "",
+            gr.update(visible=True), "",
         )
 
         if not project or not relative_path:
@@ -285,9 +273,7 @@ def build_workspace_tab() -> None:
         # Build preview HTML
         preview = ""
         if previewable:
-            _start_file_server(project, port=_server_port)
-            server_url = f"http://127.0.0.1:{_server_port}"
-            preview = _build_preview(relative_path, content, server_url)
+            preview = _build_preview(relative_path, content)
 
         return (
             content,
@@ -314,12 +300,7 @@ def build_workspace_tab() -> None:
     def refresh_preview(relative_path: str, content: str):
         if not _is_previewable(relative_path or ""):
             return ""
-        project = get_active_project()
-        if not project:
-            return ""
-        _start_file_server(project, port=_server_port)
-        server_url = f"http://127.0.0.1:{_server_port}"
-        return _build_preview(relative_path, content, server_url)
+        return _build_preview(relative_path, content)
 
     # ── Layout ─────────────────────────────────────────────────────────
 
@@ -329,7 +310,7 @@ def build_workspace_tab() -> None:
             with gr.Row():
                 with gr.Column(scale=3):
                     project_label = gr.Markdown("⚠️ No project")
-                refresh_btn = gr.Button("🔄", size="sm", scale=0)
+                refresh_btn = gr.Button("🔄Refresh", size="sm", scale=0)
 
             file_tree = gr.Radio(
                 label="📂 Files",
@@ -360,7 +341,7 @@ def build_workspace_tab() -> None:
 
                     with gr.Tab("Preview", visible=False) as preview_tab:
                         preview_html = gr.HTML(
-                            value="<p style='color:#888;padding:20px;'>Select a previewable file.</p>",
+                            value="<p style='color:#888;padding:20px;'>Select a file.</p>",
                             elem_id="ide-preview",
                         )
                         refresh_preview_btn = gr.Button("🔄 Refresh Preview", size="sm")

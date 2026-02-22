@@ -81,4 +81,6 @@ def get_env_keys() -> dict[str, str]:
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
         "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY", ""),
         "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY", ""),
+        "GRADIO_AUTH_USER": os.getenv("GRADIO_AUTH_USER", ""),
+        "GRADIO_AUTH_PASSWORD": os.getenv("GRADIO_AUTH_PASSWORD", ""),
     }

@@ -1,4 +1,4 @@
-.PHONY: venv install install-dev update-deps setup-browser test run lint fmt help
+.PHONY: venv install install-dev update-deps setup-browser test run lint fmt help browser-start browser-stop browser-status
 
 VENV    := .venv
 PYTHON  := $(VENV)/bin/python
@@ -57,3 +57,18 @@ lint: venv
 fmt: venv
 	$(VENV)/bin/ruff format .
 	$(VENV)/bin/ruff check . --fix
+
+# ── Docker Browser ──────────────────────────────────────────────────────
+browser-start: ## Pull image & start browser container
+	@docker rm -f agent-browser 2>/dev/null || true
+	docker pull jlesage/firefox
+	docker run -d --name agent-browser --shm-size=512m -p 5800:5800 jlesage/firefox
+	@echo "✅ Browser running at http://localhost:5800"
+
+browser-stop: ## Stop & remove browser container
+	docker stop agent-browser && docker rm agent-browser
+	@echo "✅ Browser container stopped and removed"
+
+browser-status: ## Show container status
+	@docker inspect --format '{{.State.Status}}' agent-browser 2>/dev/null || echo "not created"
+

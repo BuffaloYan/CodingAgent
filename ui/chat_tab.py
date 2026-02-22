@@ -145,9 +145,12 @@ def build_chat_tab() -> None:
             '<div style="display:inline-flex;align-items:center;gap:6px;'
             'padding:6px 14px;background:linear-gradient(135deg,#1e293b,#334155);'
             'border-radius:8px;font-size:0.9rem;color:#93c5fd;margin-bottom:8px;">'
-            '<span style="display:inline-block;animation:pulse 1.4s ease-in-out infinite;">●</span>'
-            '<span style="display:inline-block;animation:pulse 1.4s ease-in-out 0.2s infinite;">●</span>'
-            '<span style="display:inline-block;animation:pulse 1.4s ease-in-out 0.4s infinite;">●</span>'
+            '<span style="display:inline-block;animation:pulse 1.4s ease-in-out infinite;">'
+            '●</span>'
+            '<span style="display:inline-block;animation:pulse 1.4s ease-in-out 0.2s infinite;">'
+            '●</span>'
+            '<span style="display:inline-block;animation:pulse 1.4s ease-in-out 0.4s infinite;">'
+            '●</span>'
             '&nbsp; <b>{label}</b>'
             '</div>'
             '<style>@keyframes pulse{{0%,100%{{opacity:.3}}50%{{opacity:1}}}}</style>'
@@ -187,8 +190,10 @@ def build_chat_tab() -> None:
                     )
 
                 elif chunk_type == "tool_result":
+                    summary = "📤 Result"
                     tool_block += (
-                        f"\n\n<details><summary>📤 Result</summary>\n\n```\n{content}\n```\n\n</details>"
+                        f"\n\n<details><summary>{summary}</summary>\n\n"
+                        f"```\n{content}\n```\n\n</details>"
                     )
 
                 history[-1] = {"role": "assistant", "content": _render(working=True)}
@@ -202,7 +207,8 @@ def build_chat_tab() -> None:
         # ── Final message ────────────────────────────────────────────
         if not assistant_text.strip():
             if step_count > 0:
-                assistant_text = f"✅ **Done** — completed {step_count} step{'s' if step_count != 1 else ''}."
+                s = "s" if step_count != 1 else ""
+                assistant_text = f"✅ **Done** — completed {step_count} step{s}."
             else:
                 assistant_text = "✅ **Done.**"
 
