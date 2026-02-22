@@ -48,9 +48,48 @@ app.add_middleware(
 # ── CSS ─────────────────────────────────────────────────────────────────
 
 CUSTOM_CSS = """
+/* ── Theme Variables ── */
+:root {
+    /* Default (Dark) */
+    --bg-page: #0f111a;
+    --bg-panel: #1e1e2e;
+    --bg-header: linear-gradient(135deg, #1e1e2e 0%, #313244 100%);
+    --bg-btn: #313244;
+    --bg-btn-hover: #45475a;
+    --border-color: #45475a;
+    --border-hover: #89b4fa;
+    --text-primary: #cdd6f4;
+    --text-secondary: #a6adc8;
+}
+
+[data-theme="light"] {
+    --bg-page: #f4f5f7;
+    --bg-panel: #ffffff;
+    --bg-header: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    --bg-btn: #e9ecef;
+    --bg-btn-hover: #dee2e6;
+    --border-color: #dee2e6;
+    --border-hover: #adb5bd;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+}
+
+[data-theme="grey"] {
+    --bg-page: #343a40;
+    --bg-panel: #495057;
+    --bg-header: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+    --bg-btn: #6c757d;
+    --bg-btn-hover: #adb5bd;
+    --border-color: #adb5bd;
+    --border-hover: #ced4da;
+    --text-primary: #f8f9fa;
+    --text-secondary: #e9ecef;
+}
+
 /* ── Global ── */
 body {
-    background-color: #0f111a !important;
+    background-color: var(--bg-page) !important;
+    transition: background-color 0.3s;
 }
 
 .gradio-container {
@@ -58,11 +97,11 @@ body {
     width: 1024px !important;
     max-width: 95vw !important;
     margin: 40px auto !important;
-    border: 1px solid #45475a;
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #1e1e2e;
+    background: var(--bg-panel);
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
 
@@ -77,9 +116,9 @@ body {
 
 /* ── Header ── */
 #app-header {
-    background: linear-gradient(135deg, #1e1e2e 0%, #313244 100%);
+    background: var(--bg-header);
     padding: 16px 24px;
-    border-bottom: 1px solid #45475a;
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -96,9 +135,9 @@ body {
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    border: 1px solid #45475a;
-    background: #313244;
-    color: #cdd6f4;
+    border: 1px solid var(--border-color);
+    background: var(--bg-btn);
+    color: var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -109,8 +148,27 @@ body {
 }
 
 .win-btn:hover {
-    background: #45475a;
-    border-color: #89b4fa;
+    background: var(--bg-btn-hover);
+    border-color: var(--border-hover);
+}
+
+.theme-select {
+    background: var(--bg-btn);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0 8px;
+    height: 28px;
+    font-family: monospace;
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.theme-select:hover {
+    background: var(--bg-btn-hover);
+    border-color: var(--border-hover);
 }
 """
 
@@ -130,6 +188,40 @@ function toggleMaximize() {
         btn.title = 'Restore';
     }
 }
+
+function handleThemeChange(e) {
+    const theme = e.target.value;
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    // Save to local storage
+    localStorage.setItem('ide-theme', theme);
+    const select = document.getElementById('theme-select');
+    if(select) select.value = theme;
+
+    let effectiveTheme = theme;
+    if (theme === 'system') {
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        effectiveTheme = prefersDark ? 'dark' : 'light';
+    }
+
+    document.documentElement.setAttribute('data-theme', theme);
+
+    if (effectiveTheme === 'light') {
+        document.body.classList.remove('dark');
+        document.body.classList.add('light'); // Gradio might use this occasionally
+    } else {
+        document.body.classList.remove('light');
+        document.body.classList.add('dark');
+    }
+}
+
+// On load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('ide-theme') || 'dark';
+    applyTheme(savedTheme);
+});
 """
 
 # ── Proxy Logic ──────────────────────────────────────────────────────────
@@ -269,10 +361,16 @@ def build_gradio_blocks() -> gr.Blocks:
             gr.HTML("""
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <div style="display: flex; flex-direction: column;">
-                        <h1 style="color: #cdd6f4; margin: 0; font-size: 1.4rem;">🤖 Remote Coding Agent</h1>
-                        <p style="color: #a6adc8; margin: 2px 0 0 0; font-size: 0.8rem;">Your remote AI coding assistant — powered by LangGraph & FastAPI</p>
+                        <h1 style="color: var(--text-primary); margin: 0; font-size: 1.4rem;">🤖 Remote Coding Agent</h1>
+                        <p style="color: var(--text-secondary); margin: 2px 0 0 0; font-size: 0.8rem;">Your remote AI coding assistant — powered by LangGraph & FastAPI</p>
                     </div>
                     <div class="window-controls">
+                        <select id="theme-select" class="theme-select" onchange="handleThemeChange(event)" title="Theme">
+                            <option value="dark">Dark</option>
+                            <option value="grey">Grey</option>
+                            <option value="light">Light</option>
+                            <option value="system">System</option>
+                        </select>
                         <div class="win-btn maximize-btn" onclick="toggleMaximize()" title="Maximize" style="font-family: monospace; width: auto; padding: 0 6px;">[&lt;&gt;]</div>
                     </div>
                 </div>

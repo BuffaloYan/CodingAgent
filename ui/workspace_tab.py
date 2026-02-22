@@ -61,8 +61,8 @@ def _preview_tab_label(path: str) -> str:
 # ── Preview builders ──────────────────────────────────────────────────
 
 _PREVIEW_STYLE = (
-    "width:100%;min-height:500px;border:1px solid #45475a;"
-    "border-radius:8px;background:white;"
+    "width:100%;min-height:500px;border:1px solid var(--border-color);"
+    "border-radius:8px;background:var(--bg-page);"
 )
 
 
@@ -79,11 +79,11 @@ def _build_preview(relative_path: str, content: str) -> str:
     # ── Images: <img> tag via HTTP server
     if ext in _IMAGE_EXTS:
         return (
-            f'<div style="padding:20px;text-align:center;background:#1e1e2e;'
+            f'<div style="padding:20px;text-align:center;background:var(--bg-panel);'
             f'border-radius:8px;min-height:200px;">'
             f'<img src="{url}" style="max-width:100%;max-height:600px;'
             f'border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" />'
-            f'<p style="color:#a6adc8;margin-top:12px;font-size:0.85rem;">{relative_path}</p>'
+            f'<p style="color:var(--text-secondary);margin-top:12px;font-size:0.85rem;">{relative_path}</p>'
             f'</div>'
         )
 
@@ -94,25 +94,25 @@ def _build_preview(relative_path: str, content: str) -> str:
             extensions=["tables", "fenced_code", "codehilite", "toc", "nl2br"],
         )
         return (
-            f'<div style="padding:20px 28px;background:#1e1e2e;border-radius:8px;'
-            f'color:#cdd6f4;font-family:system-ui,sans-serif;line-height:1.7;'
+            f'<div style="padding:20px 28px;background:var(--bg-panel);border-radius:8px;'
+            f'color:var(--text-primary);font-family:system-ui,sans-serif;line-height:1.7;'
             f'max-height:600px;overflow-y:auto;">'
             f'<style>'
             f'  .md-preview h1,.md-preview h2,.md-preview h3 {{ '
-            f'color:#89b4fa; margin-top:1em; }}'
-            f'  .md-preview code {{ background:#313244; padding:2px 6px; '
+            f'color:var(--border-hover); margin-top:1em; }}'
+            f'  .md-preview code {{ background:var(--bg-btn); padding:2px 6px; '
             f'border-radius:4px; font-size:0.9em; }}'
-            f'  .md-preview pre {{ background:#313244; padding:12px; '
+            f'  .md-preview pre {{ background:var(--bg-btn); padding:12px; '
             f'border-radius:8px; overflow-x:auto; }}'
             f'  .md-preview pre code {{ background:none; padding:0; }}'
             f'  .md-preview table {{ border-collapse:collapse; width:100%; '
             f'margin:1em 0; }}'
-            f'  .md-preview th,.md-preview td {{ border:1px solid #45475a; '
+            f'  .md-preview th,.md-preview td {{ border:1px solid var(--border-color); '
             f'padding:8px 12px; text-align:left; }}'
-            f'  .md-preview th {{ background:#313244; }}'
-            f'  .md-preview a {{ color:#89b4fa; }}'
-            f'  .md-preview blockquote {{ border-left:3px solid #89b4fa; '
-            f'padding-left:12px; color:#a6adc8; }}'
+            f'  .md-preview th {{ background:var(--bg-btn); }}'
+            f'  .md-preview a {{ color:var(--border-hover); }}'
+            f'  .md-preview blockquote {{ border-left:3px solid var(--border-hover); '
+            f'padding-left:12px; color:var(--text-secondary); }}'
             f'</style>'
             f'<div class="md-preview">{html}</div>'
             f'</div>'
@@ -128,7 +128,7 @@ def _build_preview(relative_path: str, content: str) -> str:
             return f'<p style="color:red;">Error parsing {ext} file.</p>'
 
         if not rows:
-            return '<p style="color:#888;">Empty file.</p>'
+            return '<p style="color:var(--text-secondary);">Empty file.</p>'
 
         # First row as header
         header = rows[0]
@@ -143,17 +143,17 @@ def _build_preview(relative_path: str, content: str) -> str:
         return (
             f'<div style="max-height:600px;overflow:auto;border-radius:8px;">'
             f'<table style="border-collapse:collapse;width:100%;font-size:0.85rem;'
-            f'background:#1e1e2e;color:#cdd6f4;">'
-            f'<thead style="position:sticky;top:0;background:#313244;">'
+            f'background:var(--bg-panel);color:var(--text-primary);">'
+            f'<thead style="position:sticky;top:0;background:var(--bg-btn);">'
             f'<tr>{th}</tr></thead>'
             f'<tbody>{tbody}</tbody></table>'
             f'<style>'
-            f'  table th, table td {{ border:1px solid #45475a; '
+            f'  table th, table td {{ border:1px solid var(--border-color); '
             f'padding:6px 10px; text-align:left; }}'
-            f'  table tr:hover {{ background:rgba(137,180,250,0.08); }}'
+            f'  table tr:hover {{ background:var(--bg-btn); }}'
             f'</style>'
             f'</div>'
-            + (f'<p style="color:#a6adc8;font-size:0.8rem;margin-top:6px;">'
+            + (f'<p style="color:var(--text-secondary);font-size:0.8rem;margin-top:6px;">'
                f'Showing {len(body)} of {len(rows)-1} rows</p>' if len(rows) > 201 else "")
         )
 
@@ -164,19 +164,19 @@ def _build_preview(relative_path: str, content: str) -> str:
     # ── Video: HTML5 video player
     if ext in _VIDEO_EXTS:
         return (
-            f'<div style="padding:20px;text-align:center;background:#1e1e2e;border-radius:8px;">'
+            f'<div style="padding:20px;text-align:center;background:var(--bg-panel);border-radius:8px;">'
             f'<video controls style="max-width:100%;max-height:500px;border-radius:6px;">'
             f'<source src="{url}" type="video/{ext.lstrip(".")}">'
             f'Your browser does not support video.</video>'
-            f'<p style="color:#a6adc8;margin-top:12px;font-size:0.85rem;">{relative_path}</p>'
+            f'<p style="color:var(--text-secondary);margin-top:12px;font-size:0.85rem;">{relative_path}</p>'
             f'</div>'
         )
 
     # ── Audio: HTML5 audio player
     if ext in _AUDIO_EXTS:
         return (
-            f'<div style="padding:30px;text-align:center;background:#1e1e2e;border-radius:8px;">'
-            f'<p style="color:#cdd6f4;font-size:1.1rem;margin-bottom:16px;">'
+            f'<div style="padding:30px;text-align:center;background:var(--bg-panel);border-radius:8px;">'
+            f'<p style="color:var(--text-primary);font-size:1.1rem;margin-bottom:16px;">'
             f'🎵 {relative_path}</p>'
             f'<audio controls style="width:100%;max-width:500px;">'
             f'<source src="{url}" type="audio/{ext.lstrip(".")}">'
@@ -184,7 +184,7 @@ def _build_preview(relative_path: str, content: str) -> str:
             f'</div>'
         )
 
-    return '<p style="color:#888;">No preview available for this file type.</p>'
+    return '<p style="color:var(--text-secondary);">No preview available for this file type.</p>'
 
 
 # ── Main builder ──────────────────────────────────────────────────────
@@ -341,7 +341,7 @@ def build_workspace_tab() -> None:
 
                     with gr.Tab("Preview", visible=False) as preview_tab:
                         preview_html = gr.HTML(
-                            value="<p style='color:#888;padding:20px;'>Select a file.</p>",
+                            value="<p style='color:var(--text-secondary);padding:20px;'>Select a file.</p>",
                             elem_id="ide-preview",
                         )
                         refresh_preview_btn = gr.Button("🔄 Refresh Preview", size="sm")
