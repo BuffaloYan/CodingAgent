@@ -23,6 +23,11 @@ htmlcov/
 # Gradio temp files
 gradio_cached_examples/
 flagged/
+.gradio/
+
+# Logs and ephemeral files
+*.log
+sig.txt
 
 # macOS
 .DS_Store
