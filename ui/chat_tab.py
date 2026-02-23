@@ -9,7 +9,6 @@ from __future__ import annotations
 import gradio as gr
 
 from agent.agent import get_agent, stream_response
-from agent.model_discovery import PROVIDERS, fetch_models
 from core.config import load_config
 from core.projects import get_active_project, get_active_project_name
 
@@ -21,16 +20,14 @@ def _parse_model_id(model_id: str) -> tuple[str, str]:
     return "openai", model_id
 
 
-def build_chat_tab() -> None:
-    """Render the Chat tab with live provider → model dropdowns."""
+def build_chat_tab() -> gr.Dropdown:
+    """Render the Chat tab using the curated model list from config."""
 
     cfg = load_config()
+    model_list = cfg.get("models", [])
     default_model_id = cfg.get("active_model", "openai/gpt-4o")
-    default_provider, default_model = _parse_model_id(default_model_id)
-
-    # Fetch models for the default provider at launch
-    initial_models = fetch_models(default_provider)
-    initial_model = default_model if default_model in initial_models else (initial_models[0] if initial_models else "")
+    if default_model_id not in model_list and model_list:
+        default_model_id = model_list[0]
 
     with gr.Column():
         status_bar = gr.Markdown(
@@ -38,24 +35,16 @@ def build_chat_tab() -> None:
             elem_id="chat-status",
         )
 
-        # ── Provider + Model selectors ───────────────────────────────────
+        # ── Curated Model selector ───────────────────────────────────
         with gr.Row():
-            provider_dropdown = gr.Dropdown(
-                label="Provider",
-                choices=PROVIDERS,
-                value=default_provider,
-                interactive=True,
-                scale=1,
-            )
             model_dropdown = gr.Dropdown(
                 label="Model",
-                choices=initial_models,
-                value=initial_model,
-                allow_custom_value=True,
+                choices=model_list,
+                value=default_model_id,
+                allow_custom_value=False,
                 interactive=True,
-                scale=3,
+                scale=4,
             )
-            refresh_models_btn = gr.Button("⟳", size="sm", scale=0, elem_id="refresh-models-btn")
 
         chatbot = gr.Chatbot(
             label="Agent",
@@ -80,23 +69,16 @@ def build_chat_tab() -> None:
 
     # ── Helpers ────────────────────────────────────────────────────────
 
-    def save_model_selection(provider: str, model: str) -> None:
+    def save_model_selection(model_id: str) -> None:
         """Persist active_model to config.yaml silently."""
-        if provider and model:
+        if model_id:
             from core.config import save_config, load_config
             cfg = load_config()
-            cfg["active_model"] = f"{provider}/{model}"
+            cfg["active_model"] = model_id
             save_config(cfg)
 
-    def on_provider_change(provider: str):
-        """Fetch live models then update the model dropdown."""
-        models = fetch_models(provider)
-        first = models[0] if models else ""
-        return gr.update(choices=models, value=first)
-
-    def get_status(provider: str, model: str) -> str:
+    def get_status(model_id: str) -> str:
         name = get_active_project_name()
-        model_id = f"{provider}/{model}" if model else provider
         if name:
             return f"📁 **Project:** `{name}` &nbsp;|&nbsp; 🤖 **Model:** `{model_id}`"
         return "⚠️ **No project selected.** Go to the Projects tab to create or switch projects."
@@ -106,8 +88,8 @@ def build_chat_tab() -> None:
         history.append({"role": "user", "content": user_input})
         return "", history
 
-    async def bot_respond(history: list[dict], provider: str, model: str):
-        """Stream agent response using the selected provider/model."""
+    async def bot_respond(history: list[dict], model_id: str):
+        """Stream agent response using the selected model."""
         project_path = get_active_project()
         if not project_path:
             history.append({
@@ -117,12 +99,11 @@ def build_chat_tab() -> None:
             yield history
             return
 
-        if not model:
+        if not model_id:
             history.append({"role": "assistant", "content": "⚠️ Please select a model."})
             yield history
             return
 
-        model_id = f"{provider}/{model}"
         try:
             agent = get_agent(model_id, project_path)
         except Exception as e:
@@ -220,39 +201,23 @@ def build_chat_tab() -> None:
     # Update status bar + save when model changes
     model_dropdown.change(
         get_status,
-        inputs=[provider_dropdown, model_dropdown],
+        inputs=[model_dropdown],
         outputs=[status_bar],
     ).then(
         save_model_selection,
-        inputs=[provider_dropdown, model_dropdown],
+        inputs=[model_dropdown],
         outputs=None,
     )
 
-    # After provider change: refresh models, then save the new selection
-    provider_dropdown.change(
-        on_provider_change,
-        inputs=[provider_dropdown],
-        outputs=[model_dropdown],
-    ).then(
-        get_status,
-        inputs=[provider_dropdown, model_dropdown],
-        outputs=[status_bar],
-    )
-
-    # Manual ⟳ button — re-fetch models for current provider (no save needed)
-    refresh_models_btn.click(
-        on_provider_change,
-        inputs=[provider_dropdown],
-        outputs=[model_dropdown],
-    )
-
     msg_box.submit(user_msg, [msg_box, chatbot], [msg_box, chatbot], queue=False).then(
-        bot_respond, [chatbot, provider_dropdown, model_dropdown], chatbot
+        bot_respond, [chatbot, model_dropdown], chatbot
     )
     send_btn.click(user_msg, [msg_box, chatbot], [msg_box, chatbot], queue=False).then(
-        bot_respond, [chatbot, provider_dropdown, model_dropdown], chatbot
+        bot_respond, [chatbot, model_dropdown], chatbot
     )
     clear_btn.click(lambda: [], None, chatbot)
 
     # Populate status on load
-    status_bar.value = get_status(default_provider, initial_model)
+    status_bar.value = get_status(default_model_id)
+
+    return model_dropdown

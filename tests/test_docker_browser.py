@@ -61,7 +61,7 @@ def test_get_status_running(mock_run):
     status = get_browser_status()
     assert status["running"] is True
     assert status["status"] == "running"
-    assert "localhost" in status["url"]
+    assert "/vnc/" in status["url"]
 
 
 @patch("core.docker_browser._run")
@@ -111,7 +111,7 @@ def test_start_browser_success(mock_run, mock_time):
 
     result = start_browser()
     assert result["success"] is True
-    assert "localhost" in result["url"]
+    assert "/vnc/" in result["url"]
 
 
 @patch("core.docker_browser._run")

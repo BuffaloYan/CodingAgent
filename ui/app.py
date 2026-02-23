@@ -376,9 +376,9 @@ def build_gradio_blocks() -> gr.Blocks:
                 </div>
             """)
 
-        with gr.Tabs():
-            with gr.Tab("💬 Chat"):
-                build_chat_tab()
+        with gr.Tabs() as tabs:
+            with gr.Tab("💬 Chat") as chat_tab:
+                chat_dropdown = build_chat_tab()
             with gr.Tab("🗂️ Workspace"):
                 build_workspace_tab()
             with gr.Tab("🌐 Browser"):
@@ -387,8 +387,26 @@ def build_gradio_blocks() -> gr.Blocks:
                 build_project_tab()
             with gr.Tab("📥 Download"):
                 build_download_tab()
-            with gr.Tab("⚙️ Settings"):
-                build_settings_tab(model_state)
+            with gr.Tab("⚙️ Settings") as settings_tab:
+                settings_dropdown, settings_checkbox = build_settings_tab(model_state)
+
+        def sync_models():
+            c = load_config()
+            models = c.get("models", [])
+            act = c.get("active_model", "")
+            if act not in models and models:
+                act = models[0]
+            return [
+                gr.update(choices=models, value=act),
+                gr.update(choices=models, value=act),
+                gr.update(choices=models, value=models)
+            ]
+
+        # Sync states when app loads or users switch between the active model UI tabs
+        blocks.load(sync_models, None, [chat_dropdown, settings_dropdown, settings_checkbox])
+        chat_tab.select(sync_models, None, [chat_dropdown, settings_dropdown, settings_checkbox])
+        settings_tab.select(sync_models, None, [chat_dropdown, settings_dropdown, settings_checkbox])
+
     return blocks
 
 # ── Launch ───────────────────────────────────────────────────────────────
